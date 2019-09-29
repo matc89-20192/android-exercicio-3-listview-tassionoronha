@@ -1,22 +1,20 @@
 package matc89.exercicio3;
 
-import android.content.Context;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
 
     private ListView listView;
     private ArrayAdapter<Tarefa> listAdapter;
@@ -31,11 +29,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         listView = (ListView)findViewById(R.id.listView);
-        listAdapter = new ArrayAdapter<Tarefa>(
+        listAdapter = new TarefaAdapter(
                 this,
-                android.R.layout.simple_list_item_2,
-                android.R.id.text1,
                 tarefas
         );
         listView.setAdapter(listAdapter);
@@ -44,6 +41,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         buttonRemover = (Button)findViewById(R.id.buttonRemover);
         editTextDescricao = (EditText)findViewById(R.id.editDescricao);
         editTextPrioridade = (EditText) findViewById(R.id.editPrioridade);
+        this.setListeners();
+        this.checkRemoveState();
+    }
+
+    public void setListeners(){
+        buttonAdicionar.setOnClickListener(this);
+        buttonRemover.setOnClickListener(this);
+        listView.setOnItemClickListener(this);
+    }
+
+    public void checkRemoveState(){
+        if(tarefas.isEmpty()){
+            buttonRemover.setEnabled(false);
+        }else{
+            buttonRemover.setEnabled(true);
+        }
+    }
+
+    public boolean checkDescription(Tarefa tarefa){
+        for (Tarefa taskAux : tarefas){
+            if(taskAux.getDescricao().equalsIgnoreCase(tarefa.getDescricao())){
+                Toast.makeText(this,"Tarefa já cadastrada.", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean checkPriority(Tarefa tarefa){
+        if (tarefa.getPrioridade() > 10 || tarefa.getPrioridade() < 1){
+            Toast.makeText(this,"A prioridade deve estar entre 1 e 10.",Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
+
+    public void cleanInput(){
+        editTextDescricao.setText("");
+        editTextPrioridade.setText("");
+        editTextDescricao.requestFocus();
     }
 
     @Override
@@ -51,12 +90,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int id  = view.getId();
         switch (id){
             case R.id.buttonRemover :
-                Toast.makeText(this,"remover.", Toast.LENGTH_SHORT).show();
+                tarefas.remove(0);
+                listAdapter.notifyDataSetChanged();
                 break;
             case R.id.buttonAdicionar :
-                Toast.makeText(this,"adicionar.", Toast.LENGTH_SHORT).show();
+                Tarefa tarefa = new Tarefa(
+                        this.editTextDescricao.getText().toString(),
+                        Integer.parseInt(this.editTextPrioridade.getText().toString())
+                );
+                if(this.checkDescription(tarefa) && this.checkPriority(tarefa)){
+                    tarefas.add(tarefa);
+                    Collections.sort(tarefas);
+                    cleanInput();
+                    listAdapter.notifyDataSetChanged();
+                }
                 break;
         }
+        checkRemoveState();
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id){
+        tarefas.remove(position);
+        listAdapter.notifyDataSetChanged();
+        checkRemoveState();
     }
 }
 
